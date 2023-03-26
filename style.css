@@ -1,0 +1,34 @@
+
+.grid {
+	position: relative;
+	height: 100vh;
+	width: 100%;
+}
+
+.hexagon {
+	position: absolute;
+	text-align: center;
+}
+
+.hexagon,
+.hexagon::before,
+.hexagon::after {
+	width: 67px;
+	height: 116px; /* height = width * 1.732 */
+}
+
+.hexagon::before,
+.hexagon::after {
+	background-color: inherit;
+	content: "";
+	position: absolute;
+	left: 0;
+}
+
+.hexagon::before {
+	transform: rotate(-60deg);
+}
+
+.hexagon::after {
+	transform: rotate(60deg);
+}
