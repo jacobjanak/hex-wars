@@ -1,34 +1,42 @@
 
-.grid {
+[v-cloak] {
+	display: none;
+}
+
+#hover-display-container {
+	height: 40px;
+}
+
+#hex-grid {
 	position: relative;
 	height: 100vh;
 	width: 100%;
 }
 
-.hexagon {
+.hex {
 	position: absolute;
 	text-align: center;
 }
 
-.hexagon,
-.hexagon::before,
-.hexagon::after {
+.hex,
+.hex::before,
+.hex::after {
 	width: 67px;
 	height: 116px; /* height = width * 1.732 */
 }
 
-.hexagon::before,
-.hexagon::after {
+.hex::before,
+.hex::after {
 	background-color: inherit;
 	content: "";
 	position: absolute;
 	left: 0;
 }
 
-.hexagon::before {
+.hex::before {
 	transform: rotate(-60deg);
 }
 
-.hexagon::after {
+.hex::after {
 	transform: rotate(60deg);
 }
