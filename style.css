@@ -3,8 +3,56 @@
 	display: none;
 }
 
-#hover-display-container {
+/* @media (prefers-color-scheme: dark) {
+	body {
+		background-color: black;
+		color: white;
+		font-weight: bold;
+	}
+} */
+
+i {
+	font-size: 24px !important;
+}
+
+#hover-menu-container {
 	height: 40px;
+}
+
+#click-menu {
+	display: none;
+	position: absolute;
+	opacity: 1;
+}
+
+#click-menu > div {
+	position: absolute;
+	transform: translate(-12px, -12px);
+}
+
+#click-menu > #center {
+	top: 58px;
+	left: 33.5px;
+}
+
+#click-menu > #top-right {
+	top: 32px;
+	left: 59.5px;
+}
+
+#click-menu > #bottom-right {
+	top: 84px;
+	left: 59.5px;
+}
+
+#click-menu > #top-left {
+	top: 32px;
+	left: 7.5px;
+}
+
+#click-menu > #bottom-left {
+	top: 84px;
+	left: 7.5px;
 }
 
 #hex-grid {
@@ -16,6 +64,11 @@
 .hex {
 	position: absolute;
 	text-align: center;
+}
+
+.hex:hover {
+	cursor: pointer;
+	opacity: 0.75;
 }
 
 .hex,
