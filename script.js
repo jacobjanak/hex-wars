@@ -150,8 +150,7 @@ const app = Vue.createApp({
 			honeycombRadius: 0,
 			hexWidth: 100, // constant
 			activeHex: null,
-			isClickMenuOpen: false,
-			clickMenuStyle: {},
+			clickedHexKey: null,
 		};
 	},
 
@@ -242,17 +241,16 @@ const app = Vue.createApp({
 
 		unhoverHex() {
 			this.activeHex = null;
-			this.clickMenuStyle.display = 'none';
+			this.clickedHexKey = null;
 		},
 
 		clickHex(hex) {
 			this.hoverHex(hex);
-			this.isClickMenuOpen = true;
-			this.clickMenuStyle = {
-				top: this.activeHex.style.top,
-				left: this.activeHex.style.left,
-				display: 'block',
-			};
+			this.clickedHexKey = this.hashHex(hex);
+		},
+
+		isClicked(hexKey) {
+			return this.clickedHexKey === hexKey;
 		},
 
 		createUser(username) {

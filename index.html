@@ -35,15 +35,13 @@
 				:style="hex.style"
 				:key="key"
 			>
-				<!-- Empty -->
-			</div>
-
-			<div id="click-menu" :style="clickMenuStyle">
-				<div id="center"><i class="fa fa-circle-info"></i></div>
-				<div id="top-right"><i class="fa-solid fa-user"></i></i></div>
-				<div id="bottom-right"><i class="fa-solid fa-envelope"></i></div>
-				<div id="top-left"><i class="fa-solid fa-skull-crossbones"></i></div>
-				<div id="bottom-left"><i class="fa-solid fa-shield"></i></div>
+				<div id="click-menu" v-if="isClicked(key)">
+					<div id="center"><i class="fa fa-circle-info"></i></div>
+					<div id="top-right"><i class="fa-solid fa-user"></i></i></div>
+					<div id="bottom-right"><i class="fa-solid fa-envelope"></i></div>
+					<div id="top-left"><i class="fa-solid fa-skull-crossbones"></i></div>
+					<div id="bottom-left"><i class="fa-solid fa-shield"></i></div>
+				</div>
 			</div>
 		</div>
 	</div>
