@@ -7,6 +7,8 @@
 </head>
 <body>
 	<div id="app" v-cloak>
+		<button @click="runCycle">Cycle</button>
+
 		<div id="hover-menu-container">
 			<div
 				id="hover-menu"
@@ -22,6 +24,11 @@
 					<span v-else>None</span>
 				</div>
 				<!-- <div>House: Bar (Y points)</div> -->
+				<div>
+					Resources: {{ h.resources }}<br />
+					Warriors: {{ h.troops.warriors }}<br />
+					Guards: {{ h.troops.guards }}<br />
+				</div>
 			</div>
 		</div>
 

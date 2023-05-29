@@ -197,7 +197,12 @@ const app = Vue.createApp({
 
 		createHex(q, r, s) {
 			const hex = {
+				resources: 0,
 				points: 0,
+				troops: {
+					warriors: 0,
+					guards: 0,
+				},
 				user: null,
 				q,
 				r,
@@ -262,7 +267,7 @@ const app = Vue.createApp({
 				username,
 				hexes: [],
 				points: 0,
-				color: this.generateRandomColor(),
+				color: this.randomElement(colors),
 			};
 
 			this.users[id] = user;
@@ -288,7 +293,8 @@ const app = Vue.createApp({
 				return;
 			}
 
-			const hex = hexes[Math.floor(Math.random() * hexes.length)];
+			const hex = this.randomElement(hexes);
+			this.addResources(hex);
 			this.giveUserHex(user, hex);
 		},
 
@@ -302,8 +308,36 @@ const app = Vue.createApp({
 			return Math.random().toString(16).slice(2);
 		},
 
-		generateRandomColor() {
-			return colors[Math.floor(Math.random() * colors.length)];
+		randomNumber(min, max) {
+			return Math.floor(Math.random() * (max - min) + min);
+		},
+
+		randomElement(arr) {
+			return arr[this.randomNumber(0, arr.length)];
+		},
+
+		addResources(hex) {
+			hex.resources += this.randomNumber(1, 7) + this.randomNumber(1, 7);
+		},
+
+		spendResources(hex) {
+			const points = this.randomNumber(0, hex.resources + 1);
+			const troops = hex.resources - points;
+
+			const warriors = this.randomNumber(0, troops + 1);
+			const guards = troops - warriors;
+
+			hex.points += points;
+			hex.troops.warriors += warriors;
+			hex.troops.guards += guards;
+			hex.resources = 0;
+		},
+
+		runCycle() {
+			const hexes = Object.values(this.hexes);
+			hexes.forEach(hex => this.spendResources(hex));
+			hexes.forEach(hex => this.addResources(hex));
+			// Attack
 		},
 	},
 
