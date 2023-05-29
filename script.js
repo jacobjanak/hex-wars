@@ -148,6 +148,9 @@ const app = Vue.createApp({
 			users: {},
 			hexes: {},
 			honeycombRadius: 0,
+			cycles: 0,
+
+			// UI
 			hexWidth: 100, // constant
 			activeHex: null,
 			clickedHexKey: null,
@@ -227,6 +230,28 @@ const app = Vue.createApp({
 			return hex.radius === this.honeycombRadius;
 		},
 
+		getHex(q, r, s) {
+			return this.hexes[this.hashHex({ q, r, s })];
+		},
+
+		getNeighbourHashes(hex) {
+			const { q, r, s } = hex;
+			const neighbors = [];
+
+			neighbors.push(this.hashHex({ q: q + 1, r: r - 1, s: s }));
+			neighbors.push(this.hashHex({ q: q + 1, r: r, s: s - 1 }));
+			neighbors.push(this.hashHex({ q: q - 1, r: r + 1, s: s }));
+			neighbors.push(this.hashHex({ q: q, r: r + 1, s: s - 1 }));
+			neighbors.push(this.hashHex({ q: q - 1, r: r, s: s + 1 }));
+			neighbors.push(this.hashHex({ q: q, r: r - 1, s: s + 1 }));
+
+			return neighbors.filter(hash => hash in this.hexes);
+		},
+
+		getNeighbourHexes(hex) {
+			return this.getNeighbourHashes(hex).map(hash => this.hexes[hash]);
+		},
+
 		getHexStyles(q, r, s) {
 			let x = q * this.hexWidth;
 			let y = (r - s) / 1.732 * this.hexWidth;
@@ -268,6 +293,15 @@ const app = Vue.createApp({
 				hexes: [],
 				points: 0,
 				color: this.randomElement(colors),
+				stats: {
+					victories: 0,
+					defeats: 0,
+					eliminations: 0,
+					weightedEliminations: 0,
+					conquers: 0,
+					timesConquered: 0,
+					restarts: 0,
+				},
 			};
 
 			this.users[id] = user;
@@ -289,8 +323,7 @@ const app = Vue.createApp({
 
 			if (hexes.length === 0) {
 				this.createRing();
-				this.giveUserStarterHex(user);
-				return;
+				return this.giveUserStarterHex(user);
 			}
 
 			const hex = this.randomElement(hexes);
@@ -317,27 +350,124 @@ const app = Vue.createApp({
 		},
 
 		addResources(hex) {
+			if (!this.hasUser(hex)) return;
 			hex.resources += this.randomNumber(1, 7) + this.randomNumber(1, 7);
+			// TODO: log this
 		},
 
-		spendResources(hex) {
+		computerSpendResources(hex) {
+			if (!this.hasUser(hex)) return;
+
+			// Points vs. troops distribution
 			const points = this.randomNumber(0, hex.resources + 1);
 			const troops = hex.resources - points;
 
+			// Troop type distribution
 			const warriors = this.randomNumber(0, troops + 1);
 			const guards = troops - warriors;
 
-			hex.points += points;
-			hex.troops.warriors += warriors;
-			hex.troops.guards += guards;
-			hex.resources = 0;
+			this.addPoints(hex, points);
+			this.addTroops(hex, { warriors, guards });
+		},
+
+		addPoints(hex, count) {
+			hex.resources -= count;
+			hex.points += count;
+			this.getUser(hex).points += count;
+		},
+
+		addTroops(hex, troops) {
+			for (const [type, count] of Object.entries(troops)) {
+				hex.troops[type] += count;
+				hex.resources -= count;
+			}
+		},
+
+		computerAttack(attackerHex) {
+			if (!this.hasUser(attackerHex)) return;
+			if (!attackerHex.troops.warriors) return;
+
+			if (this.randomNumber(0, 10) === 0) {
+				const neighbours = this.getNeighbourHexes(attackerHex);
+				const enemyNeighbours =	neighbours.filter(h => this.hasUser(h) && h.user !== attackerHex.user); // TODO: should be a method, along with isAlly
+				if (enemyNeighbours.length) {
+					const defenderHex = this.randomElement(enemyNeighbours);
+					this.attack(attackerHex, defenderHex, { warriors: attackerHex.troops.warriors });
+				}
+			}
+		},
+
+		// TODO: make attacker and defender an object instead of having 8 different variables
+		attack(attHex, defHex, attTroops) {
+			['warriors', 'guards'].forEach(type => attTroops[type] ??= 0); // TODO: don't hard-code
+			const defTroops = defHex.troops; // TODO: probably bad that attTroops isn't by reference but this is
+
+			// Calculate result
+			const attPower = attTroops.warriors * 2 + attTroops.guards;
+			const defPower = defTroops.guards * 2 + defTroops.warriors;
+			
+			let result = attPower - defPower;
+			if (result === 0) result = Math.random() < 0.5 ? -1 : 1;
+			const winner = result > 0 ? 'attacker' : 'defender';
+
+			// Calculate surviving troops
+			const attSurvivors = { warriors: 0, guards: 0 }; // TODO: don't hard-code, make method
+			const defSurvivors = { warriors: 0, guards: 0 };
+
+			if (result > 0) {
+				attSurvivors.guards = Math.min(attTroops.guards, result);
+				result -= attSurvivors.guards;
+
+				if (result > 0) {
+					attSurvivors.warriors = Math.ceil(result / 2);
+				}
+			}
+			else if (result < 0) {
+				result *= -1;
+				defSurvivors.warriors = Math.min(defTroops.warriors, result);
+				result -= defSurvivors.warriors;
+
+				if (result > 0) {
+					defSurvivors.guards = Math.ceil(result / 2);
+				}
+			}
+
+			// Update data
+			attHex.troops.warriors -= attTroops.warriors - attSurvivors.warriors;
+			attHex.troops.guards -= attTroops.guards - attSurvivors.guards;
+			defHex.troops.warriors -= defTroops.warriors - defSurvivors.warriors;
+			defHex.troops.guards -= defTroops.guards - defSurvivors.guards;
+			// TODO: steal resources/points
+
+			// Log results
+			const attacker = this.getUser(attHex);
+			const defender = this.getUser(defHex);
+
+			if (winner === 'attacker') {
+				attacker.stats.victories++;
+				defender.stats.defeats++;
+			} else {
+				attacker.stats.defeats++;
+				defender.stats.victories++;
+			}
+
+			// TODO: do as defender/as attacker instead
+			// TODO: beautify
+			attacker.stats.eliminations += ['warriors', 'guards'].reduce((acc, type) => (
+				acc + (defTroops[type] - defSurvivors[type])
+			), 0);
+
+			defender.stats.eliminations += ['warriors', 'guards'].reduce((acc, type) => (
+				acc + (attTroops[type] - attSurvivors[type])
+			), 0);
 		},
 
 		runCycle() {
 			const hexes = Object.values(this.hexes);
-			hexes.forEach(hex => this.spendResources(hex));
+			hexes.forEach(hex => this.computerSpendResources(hex));
+			hexes.forEach(hex => this.computerAttack(hex));
 			hexes.forEach(hex => this.addResources(hex));
-			// Attack
+			this.cycles++;
 		},
 	},
 
